@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FootCareer — Studio d'Archives & Quiz</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Typographies Éditoriales : Cormorant Garamond (Serif de luxe) & Plus Jakarta Sans (Sans-serif épurée) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tone.js pour les effets sonores doux -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            sand: {
+              50: '#FAF8F5',
+              100: '#F5F1E8',
+              200: '#EAE3D6',
+              300: '#DCD4C5',
+              400: '#C7BCA7',
+              500: '#998D77',
+            },
+            charcoal: {
+              900: '#141412',
+              800: '#201F1C',
+              700: '#2F2E29',
+              600: '#4F4C44',
+              500: '#757269',
+              400: '#9E9B92',
+            },
+            terracotta: {
+              DEFAULT: '#BD5438',
+              light: '#D4694D',
+              dark: '#963E26'
+            },
+            olive: {
+              DEFAULT: '#3F4E3D',
+              light: '#536550'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Texture grain de papier subtil en superposition */
+    body {
+      background-color: #F5F1E8;
+      background-image: radial-gradient(#D6CDBC 0.75px, transparent 0.75px);
+      background-size: 24px 24px;
+    }
+
+    /* Scrollbar discrète et minimaliste */
+    .timeline-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+    .timeline-scroll::-webkit-scrollbar-track {
+      background: #EAE3D6;
+      border-radius: 9999px;
+    }
+    .timeline-scroll::-webkit-scrollbar-thumb {
+      background: #201F1C;
+      border-radius: 9999px;
+    }
+
+    @keyframes shakeSoft {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+    .animate-shake {
+      animation: shakeSoft 0.35s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="text-charcoal-900 min-h-screen flex flex-col font-sans selection:bg-charcoal-900 selection:text-sand-100 antialiased">
+
+  <!-- ================= BARRE DE NAVIGATION MINIMALISTE ================= -->
+  <header class="border-b border-sand-300 bg-sand-100/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 py-3.5 transition-all">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      
+      <!-- Logo Studio & Monogramme (style Les Palmiers / Fylla) -->
+      <div class="flex items-center gap-3.5 cursor-pointer group" onclick="resetToMenu()">
+        <div class="w-10 h-10 rounded-full border border-charcoal-900 flex items-center justify-center text-[11px] font-serif font-bold tracking-widest text-charcoal-900 group-hover:bg-charcoal-900 group-hover:text-sand-50 transition-all duration-300">
+          FC
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <span class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-charcoal-900">FootCareer</span>
+            <span class="text-[10px] tracking-[0.2em] uppercase font-semibold text-charcoal-500 hidden sm:inline">Archive Studio</span>
+          </div>
+          <p class="text-[11px] text-charcoal-500 font-normal leading-none hidden md:block">Devinez le joueur à travers son itinéraire</p>
+        </div>
+      </div>
+
+      <!-- Compteurs & Contrôles sous forme de Pilules Studio -->
+      <div class="flex items-center gap-2 sm:gap-3 text-xs">
+        
+        <!-- Badge Édition Quotidienne -->
+        <div id="dailyDateBadge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-sand-300 bg-sand-50/80 shadow-sm text-charcoal-700">
+          <span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>
+          <span id="currentDateDisplay" class="text-[10px] uppercase tracking-widest font-semibold text-charcoal-600">Aujourd'hui</span>
+        </div>
+
+        <!-- Score Capsule -->
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-sand-300 bg-sand-50/80 shadow-sm">
+          <span class="text-[10px] uppercase tracking-widest text-charcoal-500 font-semibold">Score</span>
+          <span id="scoreDisplay" class="font-serif text-base font-bold text-charcoal-900 leading-none">0</span>
+          <span id="maxScoreDenominator" class="text-[10px] text-charcoal-400 font-medium">/ 1700</span>
+        </div>
+
+        <!-- Vies (Mode Entraînement / Survie) -->
+        <div id="livesContainer" class="hidden items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-sand-300 bg-sand-50/80 shadow-sm">
+          <span class="text-[10px] uppercase tracking-widest text-charcoal-500 font-semibold mr-1">Vies</span>
+          <span id="heartsContainer" class="flex items-center gap-1 text-terracotta text-xs">
+            <i class="fa-solid fa-circle text-[8px]"></i>
+            <i class="fa-solid fa-circle text-[8px]"></i>
+            <i class="fa-solid fa-circle text-[8px]"></i>
+          </span>
+        </div>
+
+        <!-- Mute Button -->
+        <button id="soundToggleBtn" onclick="toggleAudio()" class="w-8 h-8 rounded-full border border-sand-300 hover:border-charcoal-900 flex items-center justify-center text-charcoal-700 transition duration-300 bg-sand-50/60" title="Activer / Couper le son">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-[11px]"></i>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO & EN-TÊTE ÉDITORIALE ================= -->
+  <section class="max-w-6xl w-full mx-auto px-4 sm:px-8 pt-7 pb-3">
+    <div class="border-b border-sand-300 pb-5 flex flex-col md:flex-row md:items-end justify-between gap-5">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.25em] font-semibold text-charcoal-500 mb-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-700 animate-pulse"></span>
+          <span id="editionTitleTag">Édition Quotidienne du Jour</span>
+          <span class="w-1 h-1 rounded-full bg-charcoal-400"></span>
+          <span>5 Dossiers</span>
+        </div>
+        <h2 class="font-serif text-3xl sm:text-5xl lg:text-6xl text-charcoal-900 font-normal leading-[1.08] tracking-tight">
+          L’art de retracer les <span class="italic font-serif">carrières</span> d'exception.
+        </h2>
+        <p class="mt-2.5 text-xs sm:text-sm text-charcoal-600 font-light max-w-lg leading-relaxed">
+          5 énigmes de transferts quotidiennes, identiques pour tous les passionnés. Identifiez chaque joueur en limitant vos indices pour maximiser votre prestige.
+        </p>
+      </div>
+
+      <!-- Bascule : Mode Quotidien vs Entraînement Libre -->
+      <div class="flex flex-col items-start md:items-end gap-2.5">
+        <div class="flex items-center gap-2 p-1 bg-sand-200/60 rounded-full border border-sand-300">
+          <button onclick="switchMode('daily')" id="btnTabDaily" class="px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold transition-all duration-300 bg-charcoal-900 text-sand-50 shadow-sm">
+            ✦ Édition du Jour (5)
+          </button>
+          <button onclick="switchMode('training')" id="btnTabTraining" class="px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold transition-all duration-300 text-charcoal-600 hover:text-charcoal-900">
+            Entraînement Libre
+          </button>
+        </div>
+
+        <div id="dailyCountdownHeader" class="text-[10px] uppercase tracking-widest text-charcoal-500 font-medium">
+          Prochaine édition dans <span id="headerCountdown" class="font-serif font-bold text-charcoal-900">--:--:--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= FRISE DES 5 ÉTAPES QUOTIDIENNES ================= -->
+    <div id="dailyStepperContainer" class="pt-5 pb-1">
+      <div class="flex items-center justify-between mb-2 text-[10px] uppercase tracking-widest text-charcoal-500 font-semibold">
+        <span>Progression Quotidienne</span>
+        <span id="dailyProgressText">Dossier 1 sur 5</span>
+      </div>
+      <div class="grid grid-cols-5 gap-2 sm:gap-3" id="dailyStepsGrid">
+        <!-- Rendu dynamique des 5 étapes en JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ZONE DE JEU PRINCIPALE ================= -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-4">
+
+    <!-- CARTEL DE LA MANCHE (STYLE EXPOSITION / GALERIE) -->
+    <div class="bg-sand-50 border border-sand-300 rounded-[28px] p-6 sm:p-9 shadow-[0_8px_30px_rgba(32,31,28,0.04)] relative">
+      
+      <!-- Top Cartel Info -->
+      <div class="flex items-center justify-between pb-5 border-b border-sand-200">
+        <div class="flex items-center gap-3">
+          <span class="w-2.5 h-2.5 rounded-full bg-terracotta inline-block"></span>
+          <span class="text-xs uppercase tracking-[0.2em] font-semibold text-charcoal-500">
+            Dossier <span id="playerNumber" class="text-charcoal-900 font-bold">01</span><span id="roundTotalDisplay" class="text-charcoal-400 font-normal"> / 05</span>
+          </span>
+          <span class="text-sand-300 hidden sm:inline">&vert;</span>
+          <!-- Badge dynamique du niveau et des points -->
+          <span id="playerDifficultyBadge" class="px-3 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border border-sand-300 bg-sand-100 text-charcoal-800">
+            Incontournable &bull; +150 pts
+          </span>
+        </div>
+
+        <button onclick="skipPlayer()" class="text-[11px] uppercase tracking-widest text-charcoal-500 hover:text-charcoal-900 font-semibold px-3.5 py-1.5 rounded-full border border-sand-300 hover:border-charcoal-700 transition">
+          <span id="skipBtnText">Passer (0 pt)</span> <i class="fa-solid fa-arrow-right ml-1 text-[9px]"></i>
+        </button>
+      </div>
+
+      <!-- TITRE DE LA FRISE -->
+      <div class="mt-6 mb-4 flex items-baseline justify-between">
+        <div>
+          <span class="text-[10px] uppercase tracking-[0.25em] font-bold text-charcoal-400 block mb-1">Chronologie officielle</span>
+          <h3 class="font-serif text-2xl sm:text-3xl text-charcoal-900 font-normal">
+            Parcours en club
+          </h3>
+        </div>
+        <span class="text-[11px] text-charcoal-400 tracking-wide font-light hidden sm:block">
+          Défilement horizontal &rarr;
+        </span>
+      </div>
+
+      <!-- FRISE CHRONOLOGIQUE DES CLUBS (CARROUSEL ÉDITORIAL) -->
+      <div class="my-4">
+        <div id="timelineContainer" class="timeline-scroll flex items-stretch gap-4 overflow-x-auto pb-4 pt-1">
+          <!-- Les cartes des clubs sont générées dynamiquement en JS -->
+        </div>
+      </div>
+
+      <!-- ================= SECTION INDICES (STYLE CATALOGUE) ================= -->
+      <div class="mt-8 pt-6 border-t border-sand-200">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] uppercase tracking-[0.2em] font-bold text-charcoal-700">Indices déverrouillables</span>
+            <span id="hintsPenaltyRange" class="text-xs text-charcoal-400 font-light">(&minus;30 à &minus;50 pts)</span>
+          </div>
+          <span id="hintsUsedCount" class="text-[11px] tracking-wider uppercase text-charcoal-500 font-medium">0 / 3 consulté(s)</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          
+          <!-- Indice 1: Poste -->
+          <div id="hintCardPosition" class="bg-sand-100/70 border border-sand-300 rounded-2xl p-4 flex items-center justify-between transition-all">
+            <div>
+              <div class="text-[9px] uppercase tracking-[0.2em] text-charcoal-400 font-bold mb-0.5">Indice 01</div>
+              <div class="text-xs font-semibold text-charcoal-700 flex items-center gap-1.5">
+                <span>Poste sur le terrain</span>
+              </div>
+              <div id="hintPositionText" class="font-serif italic text-base text-charcoal-900 font-bold mt-1 hidden">Attaquant</div>
+            </div>
+            <button onclick="revealHint('position')" id="hintBtnPosition" class="px-3.5 py-1.5 rounded-full border border-charcoal-900 text-charcoal-900 hover:bg-charcoal-900 hover:text-sand-50 text-[10px] uppercase tracking-wider font-semibold transition duration-200 bg-sand-50">
+              <span id="costHintPosition">-30 pts</span>
+            </button>
+          </div>
+
+          <!-- Indice 2: Nationalité -->
+          <div id="hintCardNationality" class="bg-sand-100/70 border border-sand-300 rounded-2xl p-4 flex items-center justify-between transition-all">
+            <div>
+              <div class="text-[9px] uppercase tracking-[0.2em] text-charcoal-400 font-bold mb-0.5">Indice 02</div>
+              <div class="text-xs font-semibold text-charcoal-700 flex items-center gap-1.5">
+                <span>Nationalité &amp; Drapeau</span>
+              </div>
+              <div id="hintNatText" class="font-serif italic text-base text-charcoal-900 font-bold mt-1 hidden">France</div>
+            </div>
+            <button onclick="revealHint('nationality')" id="hintBtnNationality" class="px-3.5 py-1.5 rounded-full border border-charcoal-900 text-charcoal-900 hover:bg-charcoal-900 hover:text-sand-50 text-[10px] uppercase tracking-wider font-semibold transition duration-200 bg-sand-50">
+              <span id="costHintNationality">-30 pts</span>
+            </button>
+          </div>
+
+          <!-- Indice 3: Initiale du nom -->
+          <div id="hintCardInitial" class="bg-sand-100/70 border border-sand-300 rounded-2xl p-4 flex items-center justify-between transition-all">
+            <div>
+              <div class="text-[9px] uppercase tracking-[0.2em] text-charcoal-400 font-bold mb-0.5">Indice 03</div>
+              <div class="text-xs font-semibold text-charcoal-700 flex items-center gap-1.5">
+                <span>Initiale du nom</span>
+              </div>
+              <div id="hintInitialText" class="font-serif italic text-base text-charcoal-900 font-bold mt-1 hidden">M***</div>
+            </div>
+            <button onclick="revealHint('initial')" id="hintBtnInitial" class="px-3.5 py-1.5 rounded-full border border-charcoal-900 text-charcoal-900 hover:bg-charcoal-900 hover:text-sand-50 text-[10px] uppercase tracking-wider font-semibold transition duration-200 bg-sand-50">
+              <span id="costHintInitial">-40 pts</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= CHAMP DE SAISIE MINIMALISTE ================= -->
+      <div class="mt-8 pt-6 border-t border-sand-200">
+        <label for="playerSearchInput" class="block text-[11px] font-semibold text-charcoal-600 uppercase tracking-[0.2em] mb-2.5">
+          Proposez un joueur :
+        </label>
+        
+        <div class="relative">
+          <div class="relative flex items-center">
+            <span class="absolute left-4.5 text-charcoal-400 pointer-events-none text-sm">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input 
+              type="text" 
+              id="playerSearchInput" 
+              placeholder="Ex: Zinédine Zidane, Lionel Messi, Hazard, Henry..." 
+              autocomplete="off"
+              class="w-full bg-sand-100/60 border border-sand-300 focus:border-charcoal-900 text-charcoal-900 pl-11 pr-32 py-3.5 rounded-full outline-none transition font-sans text-sm placeholder-charcoal-400/80"
+              onkeydown="handleInputKeydown(event)"
+              oninput="handleSearchInput(event)"
+            />
+            <button 
+              id="submitGuessBtn"
+              onclick="submitCurrentGuess()" 
+              class="absolute right-1.5 px-5 py-2.5 bg-charcoal-900 hover:bg-charcoal-800 text-sand-50 font-semibold rounded-full text-xs uppercase tracking-wider shadow-sm transition-all duration-300 flex items-center gap-2"
+            >
+              <span>Valider</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+
+          <!-- Menu déroulant des suggestions autocomplétées -->
+          <div 
+            id="autocompleteDropdown" 
+            class="hidden absolute left-0 right-0 top-full mt-2 bg-sand-50 border border-sand-300 rounded-2xl shadow-xl max-h-60 overflow-y-auto z-50 divide-y divide-sand-200"
+          >
+            <!-- Suggestions dynamiques -->
+          </div>
+        </div>
+
+        <!-- Alerte / Feedback Minimaliste -->
+        <div id="feedbackAlert" class="mt-3 min-h-[26px] text-xs font-medium text-center transition-all opacity-0 flex items-center justify-center gap-2">
+          <!-- Injecté via JS -->
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= POPUP MODALE : SUCCÈS ================= -->
+  <div id="resultModal" class="fixed inset-0 bg-charcoal-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-sand-50 border border-sand-300 max-w-md w-full rounded-[32px] p-7 sm:p-9 text-center shadow-2xl relative animate-fadeIn">
+      
+      <div id="modalMonogram" class="w-16 h-16 mx-auto rounded-full border border-charcoal-900 text-charcoal-900 flex items-center justify-center text-xl font-serif font-bold mb-4 bg-sand-100">
+        ✓
+      </div>
+
+      <div class="text-[10px] uppercase tracking-[0.25em] font-bold text-charcoal-400 mb-1">Dossier résolu</div>
+      <h3 id="modalTitle" class="font-serif text-3xl sm:text-4xl text-charcoal-900 font-normal mb-1">
+        Excellente Déduction
+      </h3>
+      <p id="modalSubtitle" class="text-xs text-charcoal-600 mb-6 font-light">
+        La trajectoire a été correctement attribuée.
+      </p>
+
+      <!-- Cartel récapitulatif du joueur -->
+      <div class="bg-sand-100 border border-sand-300 rounded-2xl p-4 mb-6 text-left flex items-center gap-4">
+        <div id="modalPlayerBadge" class="w-14 h-14 rounded-xl bg-sand-200 border border-sand-300 flex items-center justify-center text-2xl font-serif text-charcoal-800 flex-shrink-0">
+          ⚽
+        </div>
+        <div>
+          <div class="text-[10px] text-charcoal-500 uppercase tracking-widest font-semibold">Profil joueur</div>
+          <div id="modalPlayerName" class="font-serif text-2xl font-bold text-charcoal-900 leading-tight">Lionel Messi</div>
+          <div id="modalPlayerInfo" class="text-xs text-charcoal-600 mt-0.5 font-light">🇦🇷 Argentine &bull; Attaquant</div>
+        </div>
+      </div>
+
+      <!-- Bouton d'action capsule -->
+      <button id="modalActionBtn" onclick="nextRound()" class="w-full py-3.5 px-6 bg-charcoal-900 hover:bg-charcoal-800 text-sand-50 font-semibold rounded-full text-xs uppercase tracking-[0.15em] transition shadow-sm flex items-center justify-center gap-2">
+        <span id="modalActionBtnText">Dossier Suivant</span>
+        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ================= POPUP MODALE : BILAN QUOTIDIEN (5/5) ================= -->
+  <div id="dailyRecapModal" class="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-sand-50 border border-sand-300 max-w-lg w-full rounded-[32px] p-6 sm:p-9 text-center shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      
+      <div class="w-16 h-16 mx-auto rounded-full border border-charcoal-900 text-charcoal-900 flex items-center justify-center text-2xl font-serif font-bold mb-3 bg-sand-100">
+        ✦
+      </div>
+
+      <div class="text-[10px] uppercase tracking-[0.25em] font-bold text-charcoal-400 mb-1">Archive Éditoriale du Jour</div>
+      <h3 class="font-serif text-3xl sm:text-4xl text-charcoal-900 font-normal mb-1">
+        Édition Quotidienne Complétée
+      </h3>
+      <p id="dailyRecapDateText" class="text-xs text-charcoal-500 mb-6 font-light">
+        Les 5 dossiers du jour ont été clôturés.
+      </p>
+
+      <!-- Cartel de Score Principal -->
+      <div class="bg-sand-100 border border-sand-300 rounded-2xl p-5 mb-5 text-center">
+        <span class="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal-500 block mb-1">Score Quotidien Total</span>
+        <div class="flex items-baseline justify-center gap-2">
+          <span id="dailyRecapFinalScore" class="font-serif text-5xl font-bold text-charcoal-900 leading-none">0</span>
+          <span class="text-sm font-serif text-charcoal-500 font-semibold">/ 1 700 pts</span>
+        </div>
+        <div id="dailyPrestigeTitle" class="text-xs font-serif italic text-charcoal-700 mt-2">
+          « Érudit des Pelouses »
+        </div>
+      </div>
+
+      <!-- Récapitulatif des 5 Joueurs -->
+      <div class="space-y-2 mb-6 text-left" id="dailyRecapItemsList">
+        <!-- Injecté dynamiquement en JS -->
+      </div>
+
+      <!-- Action : Copier le Bilan -->
+      <div class="space-y-3">
+        <button onclick="copyDailyShare()" class="w-full py-3.5 px-6 bg-charcoal-900 hover:bg-charcoal-800 text-sand-50 font-semibold rounded-full text-xs uppercase tracking-[0.15em] transition shadow-sm flex items-center justify-center gap-2">
+          <i class="fa-regular fa-clone text-xs"></i>
+          <span>Copier le Bilan du Jour</span>
+        </button>
+        
+        <div id="copyFeedbackText" class="text-[11px] font-semibold text-emerald-800 h-4 opacity-0 transition-all duration-300">
+          ✓ Bilan copié dans le presse-papier !
+        </div>
+
+        <!-- Compte à rebours avant la prochaine édition -->
+        <div class="p-3 rounded-xl bg-sand-200/50 border border-sand-300/80 text-xs text-charcoal-600 flex items-center justify-between">
+          <span class="text-[10px] uppercase tracking-widest font-semibold text-charcoal-500">Nouvelle Édition dans :</span>
+          <span id="modalCountdown" class="font-serif font-bold text-charcoal-900 text-sm">--:--:--</span>
+        </div>
+
+        <button onclick="switchToTrainingAfterDaily()" class="w-full py-3 px-6 border border-sand-300 hover:border-charcoal-800 text-charcoal-800 font-semibold rounded-full text-[11px] uppercase tracking-wider transition bg-sand-50">
+          S'entraîner sans limite (Mode Libre) &rarr;
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= POPUP MODALE : FIN DE PARTIE ================= -->
+  <div id="gameOverModal" class="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-sand-50 border border-sand-300 max-w-md w-full rounded-[32px] p-7 sm:p-9 text-center shadow-2xl relative">
+      
+      <div class="w-16 h-16 mx-auto rounded-full border border-terracotta text-terracotta flex items-center justify-center text-xl font-serif font-bold mb-4 bg-terracotta/5">
+        ✕
+      </div>
+
+      <div class="text-[10px] uppercase tracking-[0.25em] font-bold text-terracotta mb-1">Session Terminée</div>
+      <h3 class="font-serif text-3xl text-charcoal-900 font-normal mb-1">Fin du Parcours</h3>
+      <p class="text-xs text-charcoal-600 mb-6 font-light">Vos crédits de tentatives ont été épuisés.</p>
+
+      <div class="bg-sand-100 border border-sand-300 rounded-2xl p-5 mb-6">
+        <div class="text-[10px] text-charcoal-500 uppercase tracking-[0.2em] font-semibold mb-1">Score Total Récolté</div>
+        <div id="finalScoreDisplay" class="font-serif text-5xl font-bold text-charcoal-900 leading-none">0</div>
+        <div id="finalPlayersGuessed" class="text-xs text-charcoal-600 mt-3 font-light">
+          Joueur en cours : <strong id="lastPlayerName" class="text-charcoal-900 font-medium">-</strong>
+        </div>
+      </div>
+
+      <button onclick="restartGame()" class="w-full py-3.5 px-6 bg-charcoal-900 hover:bg-charcoal-800 text-sand-50 font-semibold rounded-full text-xs uppercase tracking-[0.15em] transition shadow-sm flex items-center justify-center gap-2">
+        <i class="fa-solid fa-rotate-right text-[11px]"></i>
+        <span>Commencer une Nouvelle Série</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ÉDITORIAL ================= -->
+  <footer class="border-t border-sand-300 mt-12 py-8 bg-sand-100/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-charcoal-500 font-light">
+      <div class="flex items-center gap-2">
+        <span class="w-6 h-6 rounded-full border border-charcoal-900 flex items-center justify-center text-[9px] font-serif font-bold text-charcoal-900">FC</span>
+        <span class="font-serif font-bold text-charcoal-900 text-sm">FootCareer</span>
+        <span class="text-sand-400">&bull;</span>
+        <span>Studio de Mémoire Sportive</span>
+      </div>
+      <div>
+        Typographies &bull; Cormorant Garamond &amp; Plus Jakarta Sans
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= LOGIQUE JAVASCRIPT DU JEU ================= -->
+  <script>
+    /* =====================================================================
+       1. CONFIGURATION DES NIVEAUX DE DIFFICULTÉ & POINTS
+       ===================================================================== */
+    const DIFFICULTY_CONFIG = {
+      easy: {
+        label: "Incontournable",
+        points: 150,
+        hintPos: 30,
+        hintNat: 30,
+        hintInit: 40,
+        minPts: 50,
+        badgeClass: "bg-sand-200 text-charcoal-900 border-sand-400"
+      },
+      medium: {
+        label: "Initié",
+        points: 300,
+        hintPos: 50,
+        hintNat: 50,
+        hintInit: 100,
+        minPts: 100,
+        badgeClass: "bg-emerald-900/10 text-emerald-900 border-emerald-800/30"
+      },
+      hard: {
+        label: "Érudit",
+        points: 500,
+        hintPos: 75,
+        hintNat: 75,
+        hintInit: 150,
+        minPts: 200,
+        badgeClass: "bg-terracotta/10 text-terracotta border-terracotta/30"
+      },
+      legend: {
+        label: "Légende Rétro",
+        points: 600,
+        hintPos: 100,
+        hintNat: 100,
+        hintInit: 150,
+        minPts: 250,
+        badgeClass: "bg-charcoal-900 text-sand-50 border-charcoal-900"
+      }
+    };
+
+    /* =====================================================================
+       2. CATALOGUE LARGE & ACTUALISÉ (TRANSFERTS 2024-2026 INCLUS)
+       ===================================================================== */
+    const PLAYERS_DATABASE = [
+      // ---- NIVEAU 1 : INCONTOURNABLES (150 PTS) ----
+      {
+        id: "mbappe",
+        name: "Kylian Mbappé",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "AS Monaco", years: "2015 — 2017", bg: "#dc2626", text: "#ffffff", code: "ASM" },
+          { name: "Paris Saint-Germain", years: "2017 — 2024", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "Real Madrid", years: "2024 — ...", bg: "#1f2937", text: "#f59e0b", code: "RMA" }
+        ]
+      },
+      {
+        id: "messi",
+        name: "Lionel Messi",
+        nationality: "Argentine",
+        flag: "🇦🇷",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "FC Barcelone", years: "2004 — 2021", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Paris Saint-Germain", years: "2021 — 2023", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "Inter Miami CF", years: "2023 — ...", bg: "#f472b6", text: "#111827", code: "MIA" }
+        ]
+      },
+      {
+        id: "cr7",
+        name: "Cristiano Ronaldo",
+        nationality: "Portugal",
+        flag: "🇵🇹",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Sporting CP", years: "2002 — 2003", bg: "#006633", text: "#ffffff", code: "SCP" },
+          { name: "Manchester United", years: "2003 — 2009", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Real Madrid", years: "2009 — 2018", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "Juventus", years: "2018 — 2021", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Manchester United", years: "2021 — 2022", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Al-Nassr", years: "2023 — ...", bg: "#d97706", text: "#ffffff", code: "NAS" }
+        ]
+      },
+      {
+        id: "bellingham",
+        name: "Jude Bellingham",
+        nationality: "Angleterre",
+        flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        position: "Milieu",
+        difficulty: "easy",
+        clubs: [
+          { name: "Birmingham City", years: "2019 — 2020", bg: "#1d4ed8", text: "#ffffff", code: "BCFC" },
+          { name: "Borussia Dortmund", years: "2020 — 2023", bg: "#eab308", text: "#111827", code: "BVB" },
+          { name: "Real Madrid", years: "2023 — ...", bg: "#1f2937", text: "#f59e0b", code: "RMA" }
+        ]
+      },
+      {
+        id: "haaland",
+        name: "Erling Haaland",
+        nationality: "Norvège",
+        flag: "🇳🇴",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Bryne FK", years: "2015 — 2017", bg: "#b91c1c", text: "#ffffff", code: "BRY" },
+          { name: "Molde FK", years: "2017 — 2019", bg: "#1d4ed8", text: "#ffffff", code: "MOL" },
+          { name: "Red Bull Salzbourg", years: "2019 — 2020", bg: "#dc2626", text: "#ffffff", code: "RBS" },
+          { name: "Borussia Dortmund", years: "2020 — 2022", bg: "#eab308", text: "#111827", code: "BVB" },
+          { name: "Manchester City", years: "2022 — ...", bg: "#67e8f9", text: "#0f172a", code: "MCI" }
+        ]
+      },
+      {
+        id: "vinicius",
+        name: "Vinícius Júnior",
+        nationality: "Brésil",
+        flag: "🇧🇷",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Flamengo", years: "2017 — 2018", bg: "#b91c1c", text: "#000000", code: "FLA" },
+          { name: "Real Madrid", years: "2018 — ...", bg: "#1f2937", text: "#f59e0b", code: "RMA" }
+        ]
+      },
+      {
+        id: "rodri",
+        name: "Rodri",
+        nationality: "Espagne",
+        flag: "🇪🇸",
+        position: "Milieu",
+        difficulty: "easy",
+        clubs: [
+          { name: "Villarreal CF", years: "2015 — 2018", bg: "#eab308", text: "#1d4ed8", code: "VIL" },
+          { name: "Atlético Madrid", years: "2018 — 2019", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "Manchester City", years: "2019 — ...", bg: "#67e8f9", text: "#0f172a", code: "MCI" }
+        ]
+      },
+      {
+        id: "lamine",
+        name: "Lamine Yamal",
+        nationality: "Espagne",
+        flag: "🇪🇸",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "FC Barcelone", years: "2023 — ...", bg: "#85142a", text: "#f59e0b", code: "FCB" }
+        ]
+      },
+      {
+        id: "salah",
+        name: "Mohamed Salah",
+        nationality: "Égypte",
+        flag: "🇪🇬",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "El Mokawloon", years: "2010 — 2012", bg: "#eab308", text: "#111827", code: "MOK" },
+          { name: "FC Bâle", years: "2012 — 2014", bg: "#b91c1c", text: "#1d4ed8", code: "BAS" },
+          { name: "Chelsea", years: "2014 — 2015", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Fiorentina (Prêt)", years: "2015", bg: "#6b21a8", text: "#ffffff", code: "FIO" },
+          { name: "AS Roma", years: "2015 — 2017", bg: "#7f1d1d", text: "#eab308", code: "ROM" },
+          { name: "Liverpool FC", years: "2017 — ...", bg: "#b91c1c", text: "#ffffff", code: "LIV" }
+        ]
+      },
+      {
+        id: "kane",
+        name: "Harry Kane",
+        nationality: "Angleterre",
+        flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Tottenham Hotspur", years: "2009 — 2011", bg: "#0f172a", text: "#ffffff", code: "TOT" },
+          { name: "Leyton Orient (Prêt)", years: "2011", bg: "#b91c1c", text: "#ffffff", code: "LEY" },
+          { name: "Millwall (Prêt)", years: "2012", bg: "#1e3a8a", text: "#ffffff", code: "MIL" },
+          { name: "Norwich City (Prêt)", years: "2012 — 2013", bg: "#ca8a04", text: "#15803d", code: "NOR" },
+          { name: "Leicester City (Prêt)", years: "2013", bg: "#1d4ed8", text: "#ffffff", code: "LEI" },
+          { name: "Tottenham Hotspur", years: "2013 — 2023", bg: "#0f172a", text: "#ffffff", code: "TOT" },
+          { name: "Bayern Munich", years: "2023 — ...", bg: "#dc2626", text: "#ffffff", code: "FCB" }
+        ]
+      },
+      {
+        id: "griezmann",
+        name: "Antoine Griezmann",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Real Sociedad", years: "2009 — 2014", bg: "#1d4ed8", text: "#ffffff", code: "RSO" },
+          { name: "Atlético Madrid", years: "2014 — 2019", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "FC Barcelone", years: "2019 — 2021", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Atlético Madrid", years: "2021 — ...", bg: "#b91c1c", text: "#ffffff", code: "ATM" }
+        ]
+      },
+      {
+        id: "benzema",
+        name: "Karim Benzema",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Olympique Lyonnais", years: "2004 — 2009", bg: "#1e3a8a", text: "#ef4444", code: "OL" },
+          { name: "Real Madrid", years: "2009 — 2023", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "Al-Ittihad", years: "2023 — ...", bg: "#eab308", text: "#111827", code: "ITT" }
+        ]
+      },
+      {
+        id: "neymar",
+        name: "Neymar Jr",
+        nationality: "Brésil",
+        flag: "🇧🇷",
+        position: "Attaquant",
+        difficulty: "easy",
+        clubs: [
+          { name: "Santos FC", years: "2009 — 2013", bg: "#111827", text: "#ffffff", code: "SAN" },
+          { name: "FC Barcelone", years: "2013 — 2017", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Paris Saint-Germain", years: "2017 — 2023", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "Al-Hilal", years: "2023 — ...", bg: "#1d4ed8", text: "#ffffff", code: "HIL" }
+        ]
+      },
+
+      // ---- NIVEAU 2 : INITIÉS (300 PTS) ----
+      {
+        id: "julian_alvarez",
+        name: "Julián Álvarez",
+        nationality: "Argentine",
+        flag: "🇦🇷",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "River Plate", years: "2018 — 2022", bg: "#b91c1c", text: "#ffffff", code: "RIV" },
+          { name: "Manchester City", years: "2022 — 2024", bg: "#67e8f9", text: "#0f172a", code: "MCI" },
+          { name: "Atlético Madrid", years: "2024 — ...", bg: "#b91c1c", text: "#ffffff", code: "ATM" }
+        ]
+      },
+      {
+        id: "dani_olmo",
+        name: "Dani Olmo",
+        nationality: "Espagne",
+        flag: "🇪🇸",
+        position: "Milieu",
+        difficulty: "medium",
+        clubs: [
+          { name: "Dinamo Zagreb", years: "2014 — 2020", bg: "#1d4ed8", text: "#ffffff", code: "DZG" },
+          { name: "RB Leipzig", years: "2020 — 2024", bg: "#dc2626", text: "#ffffff", code: "RBL" },
+          { name: "FC Barcelone", years: "2024 — ...", bg: "#85142a", text: "#f59e0b", code: "FCB" }
+        ]
+      },
+      {
+        id: "osimhen",
+        name: "Victor Osimhen",
+        nationality: "Nigeria",
+        flag: "🇳🇬",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "VfL Wolfsburg", years: "2017 — 2019", bg: "#65a30d", text: "#ffffff", code: "WOB" },
+          { name: "Charleroi (Prêt)", years: "2018 — 2019", bg: "#111827", text: "#ffffff", code: "CHA" },
+          { name: "Lille OSC", years: "2019 — 2020", bg: "#dc2626", text: "#ffffff", code: "LOSC" },
+          { name: "SSC Napoli", years: "2020 — 2024", bg: "#0284c7", text: "#ffffff", code: "NAP" },
+          { name: "Galatasaray (Prêt)", years: "2024 — ...", bg: "#ca8a04", text: "#b91c1c", code: "GAL" }
+        ]
+      },
+      {
+        id: "lukaku",
+        name: "Romelu Lukaku",
+        nationality: "Belgique",
+        flag: "🇧🇪",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "RSC Anderlecht", years: "2009 — 2011", bg: "#581c87", text: "#ffffff", code: "AND" },
+          { name: "Chelsea", years: "2011 — 2014", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "West Brom (Prêt)", years: "2012 — 2013", bg: "#1e3a8a", text: "#ffffff", code: "WBA" },
+          { name: "Everton", years: "2013 — 2017", bg: "#1d4ed8", text: "#ffffff", code: "EVE" },
+          { name: "Manchester United", years: "2017 — 2019", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Inter Milan", years: "2019 — 2021", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "Chelsea", years: "2021 — 2024", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "AS Roma (Prêt)", years: "2023 — 2024", bg: "#7f1d1d", text: "#ca8a04", code: "ROM" },
+          { name: "SSC Napoli", years: "2024 — ...", bg: "#0284c7", text: "#ffffff", code: "NAP" }
+        ]
+      },
+      {
+        id: "dembele",
+        name: "Ousmane Dembélé",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "Stade Rennais", years: "2015 — 2016", bg: "#b91c1c", text: "#111827", code: "SRFC" },
+          { name: "Borussia Dortmund", years: "2016 — 2017", bg: "#eab308", text: "#111827", code: "BVB" },
+          { name: "FC Barcelone", years: "2017 — 2023", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Paris Saint-Germain", years: "2023 — ...", bg: "#0d2040", text: "#e11d48", code: "PSG" }
+        ]
+      },
+      {
+        id: "deligt",
+        name: "Matthijs de Ligt",
+        nationality: "Pays-Bas",
+        flag: "🇳🇱",
+        position: "Défenseur",
+        difficulty: "medium",
+        clubs: [
+          { name: "Ajax Amsterdam", years: "2016 — 2019", bg: "#dc2626", text: "#ffffff", code: "AJX" },
+          { name: "Juventus", years: "2019 — 2022", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Bayern Munich", years: "2022 — 2024", bg: "#dc2626", text: "#ffffff", code: "FCB" },
+          { name: "Manchester United", years: "2024 — ...", bg: "#da291c", text: "#fbe122", code: "MUN" }
+        ]
+      },
+      {
+        id: "guirassy",
+        name: "Serhou Guirassy",
+        nationality: "Guinée",
+        flag: "🇬🇳",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "Stade Lavallois", years: "2013 — 2015", bg: "#ea580c", text: "#111827", code: "LAV" },
+          { name: "Lille OSC", years: "2015 — 2016", bg: "#dc2626", text: "#ffffff", code: "LOSC" },
+          { name: "AJ Auxerre (Prêt)", years: "2016", bg: "#1d4ed8", text: "#ffffff", code: "AJA" },
+          { name: "FC Cologne", years: "2016 — 2019", bg: "#b91c1c", text: "#ffffff", code: "KOE" },
+          { name: "Amiens SC", years: "2019 — 2020", bg: "#111827", text: "#ffffff", code: "ASC" },
+          { name: "Stade Rennais", years: "2020 — 2023", bg: "#b91c1c", text: "#111827", code: "SRFC" },
+          { name: "VfB Stuttgart", years: "2022 — 2024", bg: "#ffffff", text: "#b91c1c", code: "VFB" },
+          { name: "Borussia Dortmund", years: "2024 — ...", bg: "#eab308", text: "#111827", code: "BVB" }
+        ]
+      },
+      {
+        id: "giroud",
+        name: "Olivier Giroud",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "Grenoble Foot 38", years: "2005 — 2008", bg: "#1d4ed8", text: "#ffffff", code: "GF38" },
+          { name: "FC Istres (Prêt)", years: "2007 — 2008", bg: "#581c87", text: "#ffffff", code: "FCI" },
+          { name: "Tours FC", years: "2008 — 2010", bg: "#0284c7", text: "#ffffff", code: "TFC" },
+          { name: "Montpellier HSC", years: "2010 — 2012", bg: "#ea580c", text: "#1e3a8a", code: "MHSC" },
+          { name: "Arsenal", years: "2012 — 2018", bg: "#b91c1c", text: "#ffffff", code: "ARS" },
+          { name: "Chelsea", years: "2018 — 2021", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "AC Milan", years: "2021 — 2024", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Los Angeles FC", years: "2024 — ...", bg: "#111827", text: "#ca8a04", code: "LAFC" }
+        ]
+      },
+      {
+        id: "suarez",
+        name: "Luis Suárez",
+        nationality: "Uruguay",
+        flag: "🇺🇾",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "Club Nacional", years: "2005 — 2006", bg: "#1d4ed8", text: "#ffffff", code: "NAC" },
+          { name: "FC Groningen", years: "2006 — 2007", bg: "#15803d", text: "#ffffff", code: "GRO" },
+          { name: "Ajax Amsterdam", years: "2007 — 2011", bg: "#dc2626", text: "#ffffff", code: "AJX" },
+          { name: "Liverpool FC", years: "2011 — 2014", bg: "#b91c1c", text: "#ffffff", code: "LIV" },
+          { name: "FC Barcelone", years: "2014 — 2020", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Atlético Madrid", years: "2020 — 2022", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "Grêmio", years: "2023", bg: "#0284c7", text: "#ffffff", code: "GRE" },
+          { name: "Inter Miami CF", years: "2024 — ...", bg: "#f472b6", text: "#111827", code: "MIA" }
+        ]
+      },
+      {
+        id: "aubameyang",
+        name: "Pierre-Emerick Aubameyang",
+        nationality: "Gabon",
+        flag: "🇬🇦",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "AC Milan", years: "2008 — 2011", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Dijon FCO (Prêt)", years: "2008 — 2009", bg: "#b91c1c", text: "#ffffff", code: "DFCO" },
+          { name: "AS Saint-Étienne", years: "2011 — 2013", bg: "#15803d", text: "#ffffff", code: "ASSE" },
+          { name: "Borussia Dortmund", years: "2013 — 2018", bg: "#eab308", text: "#111827", code: "BVB" },
+          { name: "Arsenal", years: "2018 — 2022", bg: "#b91c1c", text: "#ffffff", code: "ARS" },
+          { name: "FC Barcelone", years: "2022", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Chelsea", years: "2022 — 2023", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Olympique de Marseille", years: "2023 — 2024", bg: "#0284c7", text: "#ffffff", code: "OM" },
+          { name: "Al-Qadsiah", years: "2024 — ...", bg: "#dc2626", text: "#facc15", code: "QAD" }
+        ]
+      },
+      {
+        id: "gundogan",
+        name: "İlkay Gündoğan",
+        nationality: "Allemagne",
+        flag: "🇩🇪",
+        position: "Milieu",
+        difficulty: "medium",
+        clubs: [
+          { name: "FC Nuremberg", years: "2009 — 2011", bg: "#7f1d1d", text: "#ffffff", code: "FCN" },
+          { name: "Borussia Dortmund", years: "2011 — 2016", bg: "#eab308", text: "#111827", code: "BVB" },
+          { name: "Manchester City", years: "2016 — 2023", bg: "#67e8f9", text: "#0f172a", code: "MCI" },
+          { name: "FC Barcelone", years: "2023 — 2024", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Manchester City", years: "2024 — ...", bg: "#67e8f9", text: "#0f172a", code: "MCI" }
+        ]
+      },
+      {
+        id: "dimaria",
+        name: "Ángel Di María",
+        nationality: "Argentine",
+        flag: "🇦🇷",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "Rosario Central", years: "2005 — 2007", bg: "#ca8a04", text: "#1d4ed8", code: "ROS" },
+          { name: "SL Benfica", years: "2007 — 2010", bg: "#b91c1c", text: "#ffffff", code: "SLB" },
+          { name: "Real Madrid", years: "2010 — 2014", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "Manchester United", years: "2014 — 2015", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Paris Saint-Germain", years: "2015 — 2022", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "Juventus", years: "2022 — 2023", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "SL Benfica", years: "2023 — ...", bg: "#b91c1c", text: "#ffffff", code: "SLB" }
+        ]
+      },
+      {
+        id: "palmer",
+        name: "Cole Palmer",
+        nationality: "Angleterre",
+        flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        position: "Attaquant",
+        difficulty: "medium",
+        clubs: [
+          { name: "Manchester City", years: "2020 — 2023", bg: "#67e8f9", text: "#0f172a", code: "MCI" },
+          { name: "Chelsea", years: "2023 — ...", bg: "#1e40af", text: "#ffffff", code: "CHE" }
+        ]
+      },
+      {
+        id: "wirtz",
+        name: "Florian Wirtz",
+        nationality: "Allemagne",
+        flag: "🇩🇪",
+        position: "Milieu",
+        difficulty: "medium",
+        clubs: [
+          { name: "1. FC Cologne", years: "2010 — 2020", bg: "#b91c1c", text: "#ffffff", code: "KOE" },
+          { name: "Bayer Leverkusen", years: "2020 — ...", bg: "#111827", text: "#dc2626", code: "B04" }
+        ]
+      },
+      {
+        id: "kante",
+        name: "N'Golo Kanté",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Milieu",
+        difficulty: "medium",
+        clubs: [
+          { name: "US Boulogne", years: "2012 — 2013", bg: "#b91c1c", text: "#111827", code: "USBCO" },
+          { name: "SM Caen", years: "2013 — 2015", bg: "#1d4ed8", text: "#b91c1c", code: "SMC" },
+          { name: "Leicester City", years: "2015 — 2016", bg: "#1d4ed8", text: "#ffffff", code: "LEI" },
+          { name: "Chelsea", years: "2016 — 2023", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Al-Ittihad", years: "2023 — ...", bg: "#eab308", text: "#111827", code: "ITT" }
+        ]
+      },
+
+      // ---- NIVEAU 3 : ÉRUDITS (500 PTS) ----
+      {
+        id: "morata",
+        name: "Álvaro Morata",
+        nationality: "Espagne",
+        flag: "🇪🇸",
+        position: "Attaquant",
+        difficulty: "hard",
+        clubs: [
+          { name: "Real Madrid", years: "2010 — 2014", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "Juventus", years: "2014 — 2016", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Real Madrid", years: "2016 — 2017", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "Chelsea", years: "2017 — 2019", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Atlético Madrid", years: "2019 — 2020", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "Juventus (Prêt)", years: "2020 — 2022", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Atlético Madrid", years: "2022 — 2024", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "AC Milan", years: "2024 — ...", bg: "#111827", text: "#ef4444", code: "ACM" }
+        ]
+      },
+      {
+        id: "james",
+        name: "James Rodríguez",
+        nationality: "Colombie",
+        flag: "🇨🇴",
+        position: "Milieu",
+        difficulty: "hard",
+        clubs: [
+          { name: "Envigado FC", years: "2006 — 2008", bg: "#ea580c", text: "#15803d", code: "ENV" },
+          { name: "CA Banfield", years: "2008 — 2010", bg: "#15803d", text: "#ffffff", code: "BAN" },
+          { name: "FC Porto", years: "2010 — 2013", bg: "#1d4ed8", text: "#ffffff", code: "FCP" },
+          { name: "AS Monaco", years: "2013 — 2014", bg: "#dc2626", text: "#ffffff", code: "ASM" },
+          { name: "Real Madrid", years: "2014 — 2017", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "Bayern Munich (Prêt)", years: "2017 — 2019", bg: "#dc2626", text: "#ffffff", code: "FCB" },
+          { name: "Everton", years: "2020 — 2021", bg: "#1d4ed8", text: "#ffffff", code: "EVE" },
+          { name: "Al-Rayyan", years: "2021 — 2022", bg: "#b91c1c", text: "#111827", code: "RAY" },
+          { name: "Olympiakos", years: "2022 — 2023", bg: "#dc2626", text: "#ffffff", code: "OLY" },
+          { name: "São Paulo FC", years: "2023 — 2024", bg: "#b91c1c", text: "#ffffff", code: "SAO" },
+          { name: "Rayo Vallecano", years: "2024 — ...", bg: "#ffffff", text: "#b91c1c", code: "RAYO" }
+        ]
+      },
+      {
+        id: "alexis",
+        name: "Alexis Sánchez",
+        nationality: "Chili",
+        flag: "🇨🇱",
+        position: "Attaquant",
+        difficulty: "hard",
+        clubs: [
+          { name: "Cobreloa", years: "2005 — 2006", bg: "#ea580c", text: "#ffffff", code: "COB" },
+          { name: "Colo-Colo", years: "2006 — 2007", bg: "#111827", text: "#ffffff", code: "COL" },
+          { name: "River Plate", years: "2007 — 2008", bg: "#b91c1c", text: "#ffffff", code: "RIV" },
+          { name: "Udinese", years: "2008 — 2011", bg: "#111827", text: "#ffffff", code: "UDI" },
+          { name: "FC Barcelone", years: "2011 — 2014", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Arsenal", years: "2014 — 2018", bg: "#b91c1c", text: "#ffffff", code: "ARS" },
+          { name: "Manchester United", years: "2018 — 2019", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Inter Milan", years: "2019 — 2022", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "Olympique de Marseille", years: "2022 — 2023", bg: "#0284c7", text: "#ffffff", code: "OM" },
+          { name: "Inter Milan", years: "2023 — 2024", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "Udinese", years: "2024 — ...", bg: "#111827", text: "#ffffff", code: "UDI" }
+        ]
+      },
+      {
+        id: "depay",
+        name: "Memphis Depay",
+        nationality: "Pays-Bas",
+        flag: "🇳🇱",
+        position: "Attaquant",
+        difficulty: "hard",
+        clubs: [
+          { name: "PSV Eindhoven", years: "2011 — 2015", bg: "#dc2626", text: "#ffffff", code: "PSV" },
+          { name: "Manchester United", years: "2015 — 2017", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Olympique Lyonnais", years: "2017 — 2021", bg: "#1e3a8a", text: "#ef4444", code: "OL" },
+          { name: "FC Barcelone", years: "2021 — 2023", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Atlético Madrid", years: "2023 — 2024", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "SC Corinthians", years: "2024 — ...", bg: "#111827", text: "#ffffff", code: "COR" }
+        ]
+      },
+      {
+        id: "joao_felix",
+        name: "João Félix",
+        nationality: "Portugal",
+        flag: "🇵🇹",
+        position: "Attaquant",
+        difficulty: "hard",
+        clubs: [
+          { name: "SL Benfica", years: "2018 — 2019", bg: "#b91c1c", text: "#ffffff", code: "SLB" },
+          { name: "Atlético Madrid", years: "2019 — 2023", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "Chelsea (Prêt)", years: "2023", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "FC Barcelone (Prêt)", years: "2023 — 2024", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Chelsea", years: "2024 — ...", bg: "#1e40af", text: "#ffffff", code: "CHE" }
+        ]
+      },
+      {
+        id: "etoo",
+        name: "Samuel Eto'o",
+        nationality: "Cameroun",
+        flag: "🇨🇲",
+        position: "Attaquant",
+        difficulty: "hard",
+        clubs: [
+          { name: "Real Madrid", years: "1997 — 2000", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "RCD Majorque", years: "2000 — 2004", bg: "#b91c1c", text: "#111827", code: "RCD" },
+          { name: "FC Barcelone", years: "2004 — 2009", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Inter Milan", years: "2009 — 2011", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "Anzhi Makhachkala", years: "2011 — 2013", bg: "#ca8a04", text: "#15803d", code: "ANZ" },
+          { name: "Chelsea", years: "2013 — 2014", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Everton", years: "2014 — 2015", bg: "#1d4ed8", text: "#ffffff", code: "EVE" },
+          { name: "Antalyaspor", years: "2015 — 2018", bg: "#b91c1c", text: "#ffffff", code: "ANT" }
+        ]
+      },
+      {
+        id: "fabregas",
+        name: "Cesc Fàbregas",
+        nationality: "Espagne",
+        flag: "🇪🇸",
+        position: "Milieu",
+        difficulty: "hard",
+        clubs: [
+          { name: "Arsenal", years: "2003 — 2011", bg: "#b91c1c", text: "#ffffff", code: "ARS" },
+          { name: "FC Barcelone", years: "2011 — 2014", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Chelsea", years: "2014 — 2019", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "AS Monaco", years: "2019 — 2022", bg: "#dc2626", text: "#ffffff", code: "ASM" },
+          { name: "Côme 1907", years: "2022 — 2023", bg: "#1d4ed8", text: "#ffffff", code: "COM" }
+        ]
+      },
+      {
+        id: "falcao",
+        name: "Radamel Falcao",
+        nationality: "Colombie",
+        flag: "🇨🇴",
+        position: "Attaquant",
+        difficulty: "hard",
+        clubs: [
+          { name: "River Plate", years: "2005 — 2009", bg: "#b91c1c", text: "#ffffff", code: "RIV" },
+          { name: "FC Porto", years: "2009 — 2011", bg: "#1d4ed8", text: "#ffffff", code: "FCP" },
+          { name: "Atlético Madrid", years: "2011 — 2013", bg: "#b91c1c", text: "#ffffff", code: "ATM" },
+          { name: "AS Monaco", years: "2013 — 2014", bg: "#dc2626", text: "#ffffff", code: "ASM" },
+          { name: "Manchester United (Prêt)", years: "2014 — 2015", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Chelsea (Prêt)", years: "2015 — 2016", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "AS Monaco", years: "2016 — 2019", bg: "#dc2626", text: "#ffffff", code: "ASM" },
+          { name: "Galatasaray", years: "2019 — 2021", bg: "#ca8a04", text: "#b91c1c", code: "GAL" },
+          { name: "Rayo Vallecano", years: "2021 — 2024", bg: "#ffffff", text: "#b91c1c", code: "RAYO" },
+          { name: "Millonarios FC", years: "2024 — ...", bg: "#1d4ed8", text: "#ffffff", code: "MIL" }
+        ]
+      },
+
+      // ---- NIVEAU 4 : LÉGENDES & RÉTRO (600 PTS) ----
+      {
+        id: "zidane",
+        name: "Zinédine Zidane",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Milieu",
+        difficulty: "legend",
+        clubs: [
+          { name: "AS Cannes", years: "1989 — 1992", bg: "#b91c1c", text: "#ffffff", code: "ASC" },
+          { name: "Girondins de Bordeaux", years: "1992 — 1996", bg: "#0f172a", text: "#ffffff", code: "FCGB" },
+          { name: "Juventus", years: "1996 — 2001", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Real Madrid", years: "2001 — 2006", bg: "#1f2937", text: "#f59e0b", code: "RMA" }
+        ]
+      },
+      {
+        id: "r9",
+        name: "Ronaldo Nazário",
+        nationality: "Brésil",
+        flag: "🇧🇷",
+        position: "Attaquant",
+        difficulty: "legend",
+        clubs: [
+          { name: "Cruzeiro", years: "1993 — 1994", bg: "#1d4ed8", text: "#ffffff", code: "CRU" },
+          { name: "PSV Eindhoven", years: "1994 — 1996", bg: "#dc2626", text: "#ffffff", code: "PSV" },
+          { name: "FC Barcelone", years: "1996 — 1997", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "Inter Milan", years: "1997 — 2002", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "Real Madrid", years: "2002 — 2007", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "AC Milan", years: "2007 — 2008", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Corinthians", years: "2009 — 2011", bg: "#111827", text: "#ffffff", code: "COR" }
+        ]
+      },
+      {
+        id: "ronaldinho",
+        name: "Ronaldinho",
+        nationality: "Brésil",
+        flag: "🇧🇷",
+        position: "Attaquant",
+        difficulty: "legend",
+        clubs: [
+          { name: "Grêmio", years: "1998 — 2001", bg: "#0284c7", text: "#ffffff", code: "GRE" },
+          { name: "Paris Saint-Germain", years: "2001 — 2003", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "FC Barcelone", years: "2003 — 2008", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "AC Milan", years: "2008 — 2011", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Flamengo", years: "2011 — 2012", bg: "#991b1b", text: "#000000", code: "FLA" },
+          { name: "Atlético Mineiro", years: "2012 — 2014", bg: "#111827", text: "#ffffff", code: "CAM" },
+          { name: "Querétaro FC", years: "2014 — 2015", bg: "#1e293b", text: "#38bdf8", code: "QUE" },
+          { name: "Fluminense", years: "2015", bg: "#881337", text: "#166534", code: "FLU" }
+        ]
+      },
+      {
+        id: "henry",
+        name: "Thierry Henry",
+        nationality: "France",
+        flag: "🇫🇷",
+        position: "Attaquant",
+        difficulty: "legend",
+        clubs: [
+          { name: "AS Monaco", years: "1994 — 1999", bg: "#dc2626", text: "#ffffff", code: "ASM" },
+          { name: "Juventus", years: "1999", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Arsenal", years: "1999 — 2007", bg: "#b91c1c", text: "#ffffff", code: "ARS" },
+          { name: "FC Barcelone", years: "2007 — 2010", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "New York Red Bulls", years: "2010 — 2014", bg: "#dc2626", text: "#ffffff", code: "NYRB" },
+          { name: "Arsenal (Prêt)", years: "2012", bg: "#b91c1c", text: "#ffffff", code: "ARS" }
+        ]
+      },
+      {
+        id: "zlatan",
+        name: "Zlatan Ibrahimović",
+        nationality: "Suède",
+        flag: "🇸🇪",
+        position: "Attaquant",
+        difficulty: "legend",
+        clubs: [
+          { name: "Malmö FF", years: "1999 — 2001", bg: "#38bdf8", text: "#111827", code: "MFF" },
+          { name: "Ajax Amsterdam", years: "2001 — 2004", bg: "#dc2626", text: "#ffffff", code: "AJX" },
+          { name: "Juventus", years: "2004 — 2006", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Inter Milan", years: "2006 — 2009", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "FC Barcelone", years: "2009 — 2010", bg: "#85142a", text: "#f59e0b", code: "FCB" },
+          { name: "AC Milan", years: "2010 — 2012", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Paris Saint-Germain", years: "2012 — 2016", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "Manchester United", years: "2016 — 2018", bg: "#da291c", text: "#ffffff", code: "MUN" },
+          { name: "LA Galaxy", years: "2018 — 2019", bg: "#1e3a8a", text: "#fbbf24", code: "LAG" },
+          { name: "AC Milan", years: "2020 — 2023", bg: "#111827", text: "#ef4444", code: "ACM" }
+        ]
+      },
+      {
+        id: "kroos",
+        name: "Toni Kroos",
+        nationality: "Allemagne",
+        flag: "🇩🇪",
+        position: "Milieu",
+        difficulty: "legend",
+        clubs: [
+          { name: "Bayern Munich", years: "2007 — 2009", bg: "#dc2626", text: "#ffffff", code: "FCB" },
+          { name: "Bayer Leverkusen (Prêt)", years: "2009 — 2010", bg: "#111827", text: "#dc2626", code: "B04" },
+          { name: "Bayern Munich", years: "2010 — 2014", bg: "#dc2626", text: "#ffffff", code: "FCB" },
+          { name: "Real Madrid", years: "2014 — 2024", bg: "#1f2937", text: "#f59e0b", code: "RMA" }
+        ]
+      },
+      {
+        id: "pirlo",
+        name: "Andrea Pirlo",
+        nationality: "Italie",
+        flag: "🇮🇹",
+        position: "Milieu",
+        difficulty: "legend",
+        clubs: [
+          { name: "Brescia Calcio", years: "1995 — 1998", bg: "#1d4ed8", text: "#ffffff", code: "BRE" },
+          { name: "Inter Milan", years: "1998 — 2001", bg: "#1d4ed8", text: "#ffffff", code: "INT" },
+          { name: "Reggina (Prêt)", years: "1999 — 2000", bg: "#881337", text: "#ffffff", code: "REG" },
+          { name: "AC Milan", years: "2001 — 2011", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Juventus", years: "2011 — 2015", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "New York City FC", years: "2015 — 2017", bg: "#38bdf8", text: "#0f172a", code: "NYC" }
+        ]
+      },
+      {
+        id: "beckham",
+        name: "David Beckham",
+        nationality: "Angleterre",
+        flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        position: "Milieu",
+        difficulty: "legend",
+        clubs: [
+          { name: "Manchester United", years: "1992 — 2003", bg: "#da291c", text: "#fbe122", code: "MUN" },
+          { name: "Preston North End (Prêt)", years: "1995", bg: "#111827", text: "#ffffff", code: "PNE" },
+          { name: "Real Madrid", years: "2003 — 2007", bg: "#1f2937", text: "#f59e0b", code: "RMA" },
+          { name: "LA Galaxy", years: "2007 — 2012", bg: "#1e3a8a", text: "#fbbf24", code: "LAG" },
+          { name: "AC Milan (Prêt)", years: "2009 & 2010", bg: "#111827", text: "#ef4444", code: "ACM" },
+          { name: "Paris Saint-Germain", years: "2013", bg: "#0d2040", text: "#e11d48", code: "PSG" }
+        ]
+      },
+      {
+        id: "drogba",
+        name: "Didier Drogba",
+        nationality: "Côte d'Ivoire",
+        flag: "🇨🇮",
+        position: "Attaquant",
+        difficulty: "legend",
+        clubs: [
+          { name: "Le Mans UC72", years: "1998 — 2002", bg: "#dc2626", text: "#facc15", code: "LMFC" },
+          { name: "EA Guingamp", years: "2002 — 2003", bg: "#b91c1c", text: "#111827", code: "EAG" },
+          { name: "Olympique de Marseille", years: "2003 — 2004", bg: "#0284c7", text: "#ffffff", code: "OM" },
+          { name: "Chelsea", years: "2004 — 2012", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Shanghai Shenhua", years: "2012 — 2013", bg: "#1d4ed8", text: "#ffffff", code: "SHA" },
+          { name: "Galatasaray", years: "2013 — 2014", bg: "#ca8a04", text: "#b91c1c", code: "GAL" },
+          { name: "Chelsea", years: "2014 — 2015", bg: "#1e40af", text: "#ffffff", code: "CHE" },
+          { name: "Impact de Montréal", years: "2015 — 2016", bg: "#1d4ed8", text: "#111827", code: "MTL" }
+        ]
+      },
+      {
+        id: "buffon",
+        name: "Gianluigi Buffon",
+        nationality: "Italie",
+        flag: "🇮🇹",
+        position: "Gardien",
+        difficulty: "legend",
+        clubs: [
+          { name: "Parme AC", years: "1995 — 2001", bg: "#1e3a8a", text: "#eab308", code: "PAR" },
+          { name: "Juventus", years: "2001 — 2018", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Paris Saint-Germain", years: "2018 — 2019", bg: "#0d2040", text: "#e11d48", code: "PSG" },
+          { name: "Juventus", years: "2019 — 2021", bg: "#111827", text: "#ffffff", code: "JUV" },
+          { name: "Parme Calcio", years: "2021 — 2023", bg: "#1e3a8a", text: "#eab308", code: "PAR" }
+        ]
+      }
+    ];
+
+    /* BASE ÉTENDUE D'AUTOCOMPLÉTION (160+ JOUEURS) */
+    const ALL_PLAYER_NAMES = Array.from(new Set([
+      ...PLAYERS_DATABASE.map(p => p.name),
+      "Manuel Neuer", "Alisson Becker", "Thibaut Courtois", "Ederson", "Jan Oblak", "Mike Maignan",
+      "Sergio Ramos", "Virgil van Dijk", "Gerard Piqué", "Carles Puyol", "Thiago Silva", "Marquinhos",
+      "Achraf Hakimi", "Trent Alexander-Arnold", "Dani Carvajal", "Theo Hernandez", "Alphonso Davies",
+      "Luka Modrić", "Casemiro", "Xavi Hernandez", "Andrés Iniesta", "Sergio Busquets", "Paul Pogba",
+      "Eden Hazard", "Gareth Bale", "Sadio Mané", "Riyad Mahrez", "Son Heung-min", "Bukayo Saka",
+      "Phil Foden", "Jamal Musiala", "Pedri", "Gavi", "Federico Valverde", "Eduardo Camavinga",
+      "Aurélien Tchouaméni", "Bruno Fernandes", "Bernardo Silva", "Martin Ødegaard", "Declan Rice",
+      "Khvicha Kvaratskhelia", "Lautaro Martínez", "Marcus Rashford", "Darwin Núñez", "Gabriel Jesus",
+      "Alexander Isak", "Viktor Gyökeres", "Bradley Barcola", "Warren Zaïre-Emery", "Michael Olise",
+      "Arda Güler", "Endrick", "Vitor Roque", "Kouadio Koné", "Adrien Rabiot", "Marco Verratti",
+      "Christian Eriksen", "Edinson Cavani", "Radamel Falcao", "Gonzalo Higuaín", "Carlos Tévez",
+      "Diego Forlán", "Wayne Rooney", "Robin van Persie", "Ruud van Nistelrooy", "Dennis Bergkamp",
+      "Patrick Vieira", "Steven Gerrard", "Frank Lampard", "Paul Scholes", "Ryan Giggs",
+      "Alessandro Del Piero", "Francesco Totti", "Filippo Inzaghi", "Andriy Shevchenko", "Pavel Nedvěd"
+    ])).sort();
+
+    /* =====================================================================
+       3. ÉTAT DU JEU, MODE QUOTIDIEN (5/JOUR) & AUDIO
+       ===================================================================== */
+    let currentMode = 'daily'; // 'daily' (5 par jour synchronisés) ou 'training'
+    let currentScore = 0;
+    let currentRoundIndex = 0;
+    let playersPool = [];
+    let currentPlayer = null;
+    let hintsUsed = { position: false, nationality: false, initial: false };
+    let selectedSuggestionIndex = -1;
+    let audioEnabled = true;
+    let lives = 3;
+
+    // Enregistrement des 5 manches quotidiennes
+    let dailyRecords = []; // { player, status: 'success' | 'hints' | 'skipped', points: number, hintsCount: number }
+    let dailyCompleted = false;
+
+    let synth = null;
+
+    /* =====================================================================
+       SAUVEGARDE & PERSISTANCE LOCALE (LOCALSTORAGE)
+       Permet un fonctionnement 100% quotidien sans serveur sur GitHub Pages
+       ===================================================================== */
+    const STORAGE_KEY_PREFIX = 'footcareer_daily_';
+
+    function getStorageKey(dateStr = getTodayDateString()) {
+      return `${STORAGE_KEY_PREFIX}${dateStr}`;
+    }
+
+    function saveDailyState() {
+      try {
+        const payload = {
+          date: getTodayDateString(),
+          score: currentScore,
+          roundIndex: currentRoundIndex,
+          completed: dailyCompleted,
+          records: dailyRecords
+        };
+        localStorage.setItem(getStorageKey(), JSON.stringify(payload));
+      } catch (e) {
+        console.warn("Impossible d'écrire dans localStorage :", e);
+      }
+    }
+
+    function loadDailyState() {
+      try {
+        const raw = localStorage.getItem(getStorageKey());
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.warn("Erreur de lecture du localStorage :", e);
+        return null;
+      }
+    }
+
+    /* PRNG déterministe pour synchroniser les 5 joueurs du jour pour tout le monde */
+    function getSeededRandom(seed) {
+      let s = seed % 2147483647;
+      if (s <= 0) s += 2147483646;
+      return function() {
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
+      };
+    }
+
+    function getTodayDateString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function getTodayFormattedLabel() {
+      const now = new Date();
+      return now.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    /* Génère la sélection officielle des 5 joueurs du jour */
+    function getDailyPlayers() {
+      const dateStr = getTodayDateString();
+      let seed = 0;
+      for (let i = 0; i < dateStr.length; i++) {
+        seed = ((seed << 5) - seed) + dateStr.charCodeAt(i);
+        seed |= 0;
+      }
+      const random = getSeededRandom(Math.abs(seed));
+
+      // Sous-ensembles par difficulté
+      const easy = PLAYERS_DATABASE.filter(p => p.difficulty === 'easy');
+      const medium = PLAYERS_DATABASE.filter(p => p.difficulty === 'medium');
+      const hard = PLAYERS_DATABASE.filter(p => p.difficulty === 'hard');
+      const legend = PLAYERS_DATABASE.filter(p => p.difficulty === 'legend');
+
+      const pickRandom = (arr, count) => {
+        const copy = [...arr];
+        const result = [];
+        for (let i = 0; i < count; i++) {
+          const idx = Math.floor(random() * copy.length);
+          result.push(copy.splice(idx, 1)[0]);
+        }
+        return result;
+      };
+
+      // 5 paliers progressifs : Facile x2, Initié x1, Érudit x1, Légende x1
+      const p1_2 = pickRandom(easy, 2);
+      const p3 = pickRandom(medium, 1)[0];
+      const p4 = pickRandom(hard, 1)[0];
+      const p5 = pickRandom(legend, 1)[0];
+
+      return [p1_2[0], p1_2[1], p3, p4, p5];
+    }
+
+    function initAudio() {
+      try {
+        if (!synth && window.Tone) {
+          synth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1.2 }
+          }).toDestination();
+          synth.volume.value = -12;
+        }
+      } catch (e) {}
+    }
+
+    function playSound(type) {
+      if (!audioEnabled || !window.Tone) return;
+      try {
+        if (Tone.context.state !== 'running') {
+          Tone.start();
+        }
+        initAudio();
+        if (!synth) return;
+
+        const now = Tone.now();
+        if (type === 'success') {
+          synth.triggerAttackRelease(["C4", "E4", "G4", "B4"], "8n", now);
+        } else if (type === 'fail') {
+          synth.triggerAttackRelease(["Eb3", "Bb2"], "8n", now);
+        } else if (type === 'hint') {
+          synth.triggerAttackRelease(["G4", "D5"], "16n", now);
+        } else if (type === 'gameover') {
+          synth.triggerAttackRelease(["F3", "Db3", "C3"], "4n", now);
+        }
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('soundIcon');
+      if (audioEnabled) {
+        icon.className = "fa-solid fa-volume-high text-[11px] text-charcoal-800";
+      } else {
+        icon.className = "fa-solid fa-volume-xmark text-[11px] text-sand-400";
+      }
+    }
+
+    /* =====================================================================
+       4. CONTRÔLE DES MODES & ÉTATS
+       ===================================================================== */
+    function switchMode(mode) {
+      currentMode = mode;
+      const btnDaily = document.getElementById('btnTabDaily');
+      const btnTraining = document.getElementById('btnTabTraining');
+      const stepper = document.getElementById('dailyStepperContainer');
+      const livesContainer = document.getElementById('livesContainer');
+      const maxScoreDenominator = document.getElementById('maxScoreDenominator');
+      const roundTotalDisplay = document.getElementById('roundTotalDisplay');
+
+      if (mode === 'daily') {
+        btnDaily.className = "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold transition-all duration-300 bg-charcoal-900 text-sand-50 shadow-sm";
+        btnTraining.className = "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold transition-all duration-300 text-charcoal-600 hover:text-charcoal-900";
+        stepper.classList.remove('hidden');
+        livesContainer.classList.add('hidden');
+        maxScoreDenominator.classList.remove('hidden');
+        roundTotalDisplay.textContent = " / 05";
+        document.getElementById('editionTitleTag').textContent = "Édition Quotidienne du Jour";
+        document.getElementById('skipBtnText').textContent = "Passer (0 pt)";
+        initDailyGame();
+      } else {
+        btnTraining.className = "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold transition-all duration-300 bg-charcoal-900 text-sand-50 shadow-sm";
+        btnDaily.className = "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold transition-all duration-300 text-charcoal-600 hover:text-charcoal-900";
+        stepper.classList.add('hidden');
+        livesContainer.classList.remove('hidden');
+        livesContainer.classList.add('flex');
+        maxScoreDenominator.classList.add('hidden');
+        roundTotalDisplay.textContent = "";
+        document.getElementById('editionTitleTag').textContent = "Mode Entraînement Libre";
+        document.getElementById('skipBtnText').textContent = "Passer";
+        initTrainingGame();
+      }
+    }
+
+    function initDailyGame() {
+      document.getElementById('resultModal').classList.add('hidden');
+      document.getElementById('gameOverModal').classList.add('hidden');
+      document.getElementById('dailyRecapModal').classList.add('hidden');
+
+      playersPool = getDailyPlayers();
+
+      // Vérifier si le joueur a déjà commencé ou terminé la session d'aujourd'hui
+      const savedState = loadDailyState();
+
+      if (savedState && savedState.date === getTodayDateString()) {
+        currentScore = savedState.score || 0;
+        currentRoundIndex = savedState.roundIndex || 0;
+        dailyCompleted = Boolean(savedState.completed);
+        dailyRecords = savedState.records || [];
+
+        document.getElementById('scoreDisplay').textContent = currentScore;
+        renderDailyStepper();
+
+        if (dailyCompleted) {
+          // Journée déjà bouclée : affichage direct du bilan
+          showDailyRecap(false);
+          return;
+        } else {
+          // Reprise du dossier en cours
+          loadPlayer(playersPool[currentRoundIndex]);
+          return;
+        }
+      }
+
+      // Nouvelle journée vierge
+      currentScore = 0;
+      currentRoundIndex = 0;
+      dailyCompleted = false;
+      document.getElementById('scoreDisplay').textContent = '0';
+
+      dailyRecords = playersPool.map(player => ({
+        player: player,
+        status: 'pending',
+        points: 0,
+        hintsCount: 0
+      }));
+
+      saveDailyState();
+      renderDailyStepper();
+      loadPlayer(playersPool[0]);
+    }
+
+    function initTrainingGame() {
+      document.getElementById('resultModal').classList.add('hidden');
+      document.getElementById('gameOverModal').classList.add('hidden');
+      document.getElementById('dailyRecapModal').classList.add('hidden');
+
+      currentScore = 0;
+      currentRoundIndex = 0;
+      lives = 3;
+      document.getElementById('scoreDisplay').textContent = '0';
+      updateHeartsDisplay();
+
+      // Mélange complet sans limite
+      playersPool = [...PLAYERS_DATABASE].sort(() => Math.random() - 0.5);
+      loadPlayer(playersPool[0]);
+    }
+
+    function switchToTrainingAfterDaily() {
+      document.getElementById('dailyRecapModal').classList.add('hidden');
+      switchMode('training');
+    }
+
+    /* Rendu des 5 capsules d'étape quotidiennes */
+    function renderDailyStepper() {
+      const container = document.getElementById('dailyStepsGrid');
+      container.innerHTML = "";
+
+      const stepLabels = ["01", "02", "03", "04", "05"];
+      const stepNames = ["Incontournable", "Incontournable", "Initié", "Érudit", "Légende"];
+
+      dailyRecords.forEach((record, idx) => {
+        const stepCard = document.createElement('div');
+        const isCurrent = (idx === currentRoundIndex && !dailyCompleted);
+        
+        let statusStyle = "bg-sand-100/70 border-sand-300 text-charcoal-400";
+        let statusIcon = stepLabels[idx];
+
+        if (record.status === 'success') {
+          statusStyle = "bg-charcoal-900 border-charcoal-900 text-sand-50 shadow-sm";
+          statusIcon = "✓";
+        } else if (record.status === 'hints') {
+          statusStyle = "bg-amber-100/90 border-amber-300 text-amber-900 shadow-sm";
+          statusIcon = "✦";
+        } else if (record.status === 'skipped') {
+          statusStyle = "bg-terracotta/10 border-terracotta/40 text-terracotta";
+          statusIcon = "✕";
+        } else if (isCurrent) {
+          statusStyle = "bg-sand-50 border-charcoal-900 text-charcoal-900 ring-2 ring-charcoal-900/20";
+        }
+
+        stepCard.className = `p-2.5 rounded-2xl border transition-all text-center flex flex-col items-center justify-between ${statusStyle}`;
+        stepCard.innerHTML = `
+          <div class="text-[9px] uppercase tracking-widest font-bold opacity-75">${stepLabels[idx]}</div>
+          <div class="font-serif text-base font-bold my-0.5">${statusIcon}</div>
+          <div class="text-[8px] uppercase tracking-wider font-semibold truncate w-full">${record.points > 0 ? `+${record.points}` : stepNames[idx]}</div>
+        `;
+
+        container.appendChild(stepCard);
+      });
+
+      document.getElementById('dailyProgressText').textContent = `Dossier ${Math.min(currentRoundIndex + 1, 5)} sur 5`;
+    }
+
+    /* =====================================================================
+       5. CHARGEMENT D'UN JOUEUR & UI
+       ===================================================================== */
+    function loadPlayer(player) {
+      if (!player) {
+        if (currentMode === 'daily') {
+          showDailyRecap();
+        } else {
+          triggerVictory();
+        }
+        return;
+      }
+
+      currentPlayer = player;
+      hintsUsed = { position: false, nationality: false, initial: false };
+
+      const diffConfig = DIFFICULTY_CONFIG[player.difficulty] || DIFFICULTY_CONFIG.easy;
+
+      // Badge de difficulté
+      const badge = document.getElementById('playerDifficultyBadge');
+      badge.className = `px-3 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold border transition ${diffConfig.badgeClass}`;
+      badge.innerHTML = `${diffConfig.label} &bull; +${diffConfig.points} pts max`;
+
+      // Adaptation des pénalités
+      document.getElementById('hintsPenaltyRange').textContent = `(&minus;${diffConfig.hintPos} à &minus;${diffConfig.hintInit} pts)`;
+      document.getElementById('costHintPosition').textContent = `-${diffConfig.hintPos} pts`;
+      document.getElementById('costHintNationality').textContent = `-${diffConfig.hintNat} pts`;
+      document.getElementById('costHintInitial').textContent = `-${diffConfig.hintInit} pts`;
+
+      updateHintsUI();
+
+      const numStr = String(currentRoundIndex + 1).padStart(2, '0');
+      document.getElementById('playerNumber').textContent = numStr;
+
+      const input = document.getElementById('playerSearchInput');
+      input.value = "";
+      input.disabled = false;
+      input.focus();
+      hideDropdown();
+      hideFeedback();
+
+      renderTimeline(player.clubs);
+
+      if (currentMode === 'daily') {
+        renderDailyStepper();
+      }
+    }
+
+    function renderTimeline(clubs) {
+      const container = document.getElementById('timelineContainer');
+      container.innerHTML = "";
+
+      clubs.forEach((club, index) => {
+        const card = document.createElement('div');
+        card.className = "flex-shrink-0 flex flex-col items-center justify-between p-4 rounded-2xl bg-sand-100/90 border border-sand-300 min-w-[145px] max-w-[160px] text-center transition-all duration-300 hover:border-charcoal-700 hover:bg-sand-50";
+
+        const badge = document.createElement('div');
+        badge.className = "w-11 h-11 rounded-full flex items-center justify-center font-serif font-bold text-xs shadow-sm mb-3 border border-black/10";
+        badge.style.backgroundColor = club.bg || '#201F1C';
+        badge.style.color = club.text || '#FAF8F5';
+        badge.textContent = club.code || club.name.substring(0, 3).toUpperCase();
+
+        const name = document.createElement('div');
+        name.className = "text-xs font-serif font-bold text-charcoal-900 line-clamp-1 w-full tracking-wide";
+        name.title = club.name;
+        name.textContent = club.name;
+
+        const years = document.createElement('div');
+        years.className = "text-[9px] text-charcoal-500 font-semibold tracking-widest uppercase mt-2 border-t border-sand-200/80 pt-1.5 w-full";
+        years.textContent = club.years;
+
+        card.appendChild(badge);
+        card.appendChild(name);
+        card.appendChild(years);
+        container.appendChild(card);
+
+        if (index < clubs.length - 1) {
+          const arrow = document.createElement('div');
+          arrow.className = "flex-shrink-0 flex items-center text-charcoal-300 px-0.5 text-xs font-light";
+          arrow.innerHTML = "&rarr;";
+          container.appendChild(arrow);
+        }
+      });
+    }
+
+    /* =====================================================================
+       6. LOGIQUE DES INDICES
+       ===================================================================== */
+    function revealHint(type) {
+      if (hintsUsed[type] || !currentPlayer) return;
+
+      hintsUsed[type] = true;
+      playSound('hint');
+
+      if (type === 'position') {
+        const textElem = document.getElementById('hintPositionText');
+        textElem.textContent = currentPlayer.position;
+        textElem.classList.remove('hidden');
+        document.getElementById('hintBtnPosition').classList.add('hidden');
+      } else if (type === 'nationality') {
+        const textElem = document.getElementById('hintNatText');
+        textElem.textContent = `${currentPlayer.flag} ${currentPlayer.nationality}`;
+        textElem.classList.remove('hidden');
+        document.getElementById('hintBtnNationality').classList.add('hidden');
+      } else if (type === 'initial') {
+        const textElem = document.getElementById('hintInitialText');
+        const parts = currentPlayer.name.split(" ");
+        const lastName = parts[parts.length - 1];
+        textElem.textContent = `${lastName[0]}${"*".repeat(lastName.length - 1)}`;
+        textElem.classList.remove('hidden');
+        document.getElementById('hintBtnInitial').classList.add('hidden');
+      }
+
+      const usedCount = Object.values(hintsUsed).filter(Boolean).length;
+      document.getElementById('hintsUsedCount').textContent = `${usedCount} / 3 consulté(s)`;
+    }
+
+    function updateHintsUI() {
+      ['position', 'nationality', 'initial'].forEach(type => {
+        const cap = type.charAt(0).toUpperCase() + type.slice(1);
+        const textElem = document.getElementById(`hint${type === 'nationality' ? 'Nat' : cap}Text`);
+        const btnElem = document.getElementById(`hintBtn${cap}`);
+        if (textElem && btnElem) {
+          textElem.classList.add('hidden');
+          btnElem.classList.remove('hidden');
+        }
+      });
+      document.getElementById('hintsUsedCount').textContent = `0 / 3 consulté(s)`;
+    }
+
+    /* =====================================================================
+       7. RECHERCHE ET AUTOCOMPLÉTION
+       ===================================================================== */
+    function handleSearchInput(e) {
+      const query = e.target.value.trim().toLowerCase();
+      const dropdown = document.getElementById('autocompleteDropdown');
+      selectedSuggestionIndex = -1;
+
+      if (query.length < 2) {
+        hideDropdown();
+        return;
+      }
+
+      const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const normQuery = normalize(query);
+
+      const matches = ALL_PLAYER_NAMES.filter(name => {
+        return normalize(name).includes(normQuery);
+      }).slice(0, 6);
+
+      if (matches.length === 0) {
+        hideDropdown();
+        return;
+      }
+
+      dropdown.innerHTML = "";
+      matches.forEach((name) => {
+        const item = document.createElement('div');
+        item.className = "px-5 py-3 hover:bg-sand-200/60 cursor-pointer flex items-center justify-between transition text-xs font-medium text-charcoal-800";
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-charcoal-400"></span>
+            <span class="font-serif text-sm font-semibold">${name}</span>
+          </div>
+          <span class="text-[9px] uppercase tracking-widest text-charcoal-400 font-bold">Sélectionner</span>
+        `;
+        item.onclick = () => {
+          document.getElementById('playerSearchInput').value = name;
+          hideDropdown();
+          submitCurrentGuess();
+        };
+        dropdown.appendChild(item);
+      });
+
+      dropdown.classList.remove('hidden');
+    }
+
+    function handleInputKeydown(e) {
+      const dropdown = document.getElementById('autocompleteDropdown');
+      const items = dropdown.querySelectorAll('div.cursor-pointer');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items.length > 0) {
+          selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+          highlightSuggestion(items);
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items.length > 0) {
+          selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
+          highlightSuggestion(items);
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!dropdown.classList.contains('hidden') && selectedSuggestionIndex >= 0 && items[selectedSuggestionIndex]) {
+          items[selectedSuggestionIndex].click();
+        } else {
+          submitCurrentGuess();
+        }
+      } else if (e.key === 'Escape') {
+        hideDropdown();
+      }
+    }
+
+    function highlightSuggestion(items) {
+      items.forEach((item, idx) => {
+        if (idx === selectedSuggestionIndex) {
+          item.classList.add('bg-sand-200', 'text-charcoal-900');
+        } else {
+          item.classList.remove('bg-sand-200', 'text-charcoal-900');
+        }
+      });
+    }
+
+    function hideDropdown() {
+      const dropdown = document.getElementById('autocompleteDropdown');
+      dropdown.classList.add('hidden');
+      selectedSuggestionIndex = -1;
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#playerSearchInput') && !e.target.closest('#autocompleteDropdown')) {
+        hideDropdown();
+      }
+    });
+
+    /* =====================================================================
+       8. VALIDATION & PROGRESSION
+       ===================================================================== */
+    function submitCurrentGuess() {
+      const input = document.getElementById('playerSearchInput');
+      const guess = input.value.trim();
+
+      if (!guess) {
+        showFeedback("Veuillez renseigner un joueur.", "warning");
+        return;
+      }
+
+      hideDropdown();
+
+      const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      const normGuess = normalize(guess);
+      const normTarget = normalize(currentPlayer.name);
+
+      const isCorrect = (normGuess === normTarget) || 
+        (normGuess.length > 4 && normTarget.includes(normGuess)) ||
+        (currentPlayer.id === 'cr7' && (normGuess.includes('ronaldo') && !normGuess.includes('nazario'))) ||
+        (currentPlayer.id === 'r9' && (normGuess.includes('nazario') || (normGuess === 'ronaldo' && !normGuess.includes('cristiano'))));
+
+      if (isCorrect) {
+        handleSuccess();
+      } else {
+        handleFail(guess);
+      }
+    }
+
+    function handleSuccess() {
+      playSound('success');
+
+      const diffConfig = DIFFICULTY_CONFIG[currentPlayer.difficulty] || DIFFICULTY_CONFIG.easy;
+      let points = diffConfig.points;
+      const hintsCount = Object.values(hintsUsed).filter(Boolean).length;
+
+      if (hintsUsed.position) points -= diffConfig.hintPos;
+      if (hintsUsed.nationality) points -= diffConfig.hintNat;
+      if (hintsUsed.initial) points -= diffConfig.hintInit;
+
+      points = Math.max(points, diffConfig.minPts);
+      currentScore += points;
+      document.getElementById('scoreDisplay').textContent = currentScore;
+
+      if (currentMode === 'daily') {
+        dailyRecords[currentRoundIndex] = {
+          player: currentPlayer,
+          status: hintsCount === 0 ? 'success' : 'hints',
+          points: points,
+          hintsCount: hintsCount
+        };
+        saveDailyState();
+        renderDailyStepper();
+      }
+
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          colors: ['#BD5438', '#141412', '#998D77'],
+          origin: { y: 0.6 }
+        });
+      } catch(e) {}
+
+      showModalSuccess(points, diffConfig.label);
+    }
+
+    function handleFail(guess) {
+      playSound('fail');
+
+      const input = document.getElementById('playerSearchInput');
+      input.classList.add('animate-shake', 'border-terracotta');
+      setTimeout(() => {
+        input.classList.remove('animate-shake', 'border-terracotta');
+      }, 400);
+
+      showFeedback(`"${guess}" ne correspond pas à cette carrière.`, "danger");
+
+      if (currentMode === 'training') {
+        lives--;
+        updateHeartsDisplay();
+        if (lives <= 0) {
+          triggerGameOver();
+        }
+      }
+    }
+
+    function skipPlayer() {
+      playSound('fail');
+
+      if (currentMode === 'daily') {
+        dailyRecords[currentRoundIndex] = {
+          player: currentPlayer,
+          status: 'skipped',
+          points: 0,
+          hintsCount: Object.values(hintsUsed).filter(Boolean).length
+        };
+        saveDailyState();
+        renderDailyStepper();
+        showFeedback(`Dossier passé (0 pt). C'était ${currentPlayer.name}.`, "warning");
+        setTimeout(() => {
+          advanceToNextDailyRound();
+        }, 900);
+      } else {
+        lives--;
+        updateHeartsDisplay();
+        if (lives <= 0) {
+          triggerGameOver();
+          return;
+        }
+        showFeedback(`Carrière passée : ${currentPlayer.name}.`, "warning");
+        setTimeout(() => {
+          nextRound();
+        }, 900);
+      }
+    }
+
+    function advanceToNextDailyRound() {
+      currentRoundIndex++;
+      if (currentRoundIndex >= 5) {
+        dailyCompleted = true;
+        saveDailyState();
+        renderDailyStepper();
+        showDailyRecap();
+      } else {
+        saveDailyState();
+        loadPlayer(playersPool[currentRoundIndex]);
+      }
+    }
+
+    function showModalSuccess(pointsEarned, difficultyLabel) {
+      const modal = document.getElementById('resultModal');
+      document.getElementById('modalTitle').textContent = "Dossier Résolu";
+      document.getElementById('modalSubtitle').textContent = `Palier ${difficultyLabel} &bull; +${pointsEarned} points ajoutés.`;
+      document.getElementById('modalPlayerName').textContent = currentPlayer.name;
+      document.getElementById('modalPlayerInfo').textContent = `${currentPlayer.flag} ${currentPlayer.nationality} • ${currentPlayer.position}`;
+      document.getElementById('modalPlayerBadge').textContent = currentPlayer.flag;
+
+      if (currentMode === 'daily' && currentRoundIndex === 4) {
+        document.getElementById('modalActionBtnText').textContent = "Voir le Bilan Quotidien";
+      } else {
+        document.getElementById('modalActionBtnText').textContent = "Dossier Suivant";
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function nextRound() {
+      document.getElementById('resultModal').classList.add('hidden');
+      
+      if (currentMode === 'daily') {
+        advanceToNextDailyRound();
+      } else {
+        currentRoundIndex++;
+        if (currentRoundIndex >= playersPool.length) {
+          triggerVictory();
+        } else {
+          loadPlayer(playersPool[currentRoundIndex]);
+        }
+      }
+    }
+
+    /* =====================================================================
+       9. BILAN DU JOUR & PARTAGE COPYS
+       ===================================================================== */
+    function showDailyRecap(withConfetti = true) {
+      dailyCompleted = true;
+      document.getElementById('resultModal').classList.add('hidden');
+      const modal = document.getElementById('dailyRecapModal');
+
+      document.getElementById('dailyRecapDateText').textContent = `Édition du ${getTodayFormattedLabel()}`;
+      document.getElementById('dailyRecapFinalScore').textContent = currentScore;
+
+      // Titre honorifique selon le score
+      let prestige = "Initié des Gazons";
+      if (currentScore >= 1500) prestige = "✦ Grand Maître d'Archives Footballistiques";
+      else if (currentScore >= 1200) prestige = "Érudit & Mémoire d'Or";
+      else if (currentScore >= 800) prestige = "Spécialiste du Mercato";
+      else if (currentScore >= 400) prestige = "Observateur Passionné";
+      document.getElementById('dailyPrestigeTitle').textContent = `« ${prestige} »`;
+
+      // Liste détaillée des 5 dossiers
+      const list = document.getElementById('dailyRecapItemsList');
+      list.innerHTML = "";
+
+      dailyRecords.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-3 rounded-xl bg-sand-200/50 border border-sand-300 text-xs";
+
+        let icon = "🟩";
+        let statusLabel = "Sans indice";
+        if (item.status === 'hints') {
+          icon = "🟨";
+          statusLabel = `${item.hintsCount} indice(s)`;
+        } else if (item.status === 'skipped') {
+          icon = "🟥";
+          statusLabel = "Manqué / Passé";
+        }
+
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-base">${icon}</span>
+            <div>
+              <div class="font-serif font-bold text-sm text-charcoal-900">${item.player.name}</div>
+              <div class="text-[10px] text-charcoal-500 font-light">${item.player.position} &bull; ${item.player.nationality}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-charcoal-900">${item.points > 0 ? `+${item.points} pts` : '0 pt'}</div>
+            <div class="text-[9px] uppercase tracking-wider text-charcoal-500">${statusLabel}</div>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+
+      if (withConfetti) {
+        try {
+          confetti({
+            particleCount: 90,
+            spread: 75,
+            colors: ['#BD5438', '#141412', '#998D77'],
+            origin: { y: 0.5 }
+          });
+        } catch(e) {}
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function generateDailyShareText() {
+      const dateStr = getTodayFormattedLabel();
+      let grid = dailyRecords.map(r => {
+        if (r.status === 'success') return '🟩';
+        if (r.status === 'hints') return '🟨';
+        return '🟥';
+      }).join(' ');
+
+      return `FootCareer Studio — Édition Quotidienne\n📅 ${dateStr}\n🏆 Score : ${currentScore} / 1 700 pts\n\n${grid}\n\nRetracez les carrières sur FootCareer Studio !`;
+    }
+
+    function copyDailyShare() {
+      const shareText = generateDailyShareText();
+      
+      // Utilisation d'un élément textarea temporaire avec document.execCommand('copy') pour les iframes
+      const textArea = document.createElement("textarea");
+      textArea.value = shareText;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        document.execCommand('copy');
+        const feedback = document.getElementById('copyFeedbackText');
+        feedback.classList.remove('opacity-0');
+        setTimeout(() => {
+          feedback.classList.add('opacity-0');
+        }, 2500);
+      } catch (err) {
+        showFeedback("Impossible de copier automatiquement.", "warning");
+      }
+
+      document.body.removeChild(textArea);
+    }
+
+    function updateMidnightCountdown() {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = tomorrow - now;
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      const str = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      const headerElem = document.getElementById('headerCountdown');
+      const modalElem = document.getElementById('modalCountdown');
+      if (headerElem) headerElem.textContent = str;
+      if (modalElem) modalElem.textContent = str;
+    }
+
+    function showFeedback(message, type) {
+      const alert = document.getElementById('feedbackAlert');
+      alert.innerHTML = "";
+
+      let colorClass = "text-charcoal-700";
+      if (type === "danger") colorClass = "text-terracotta";
+      else if (type === "warning") colorClass = "text-amber-800";
+
+      alert.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-current"></span> <span class="${colorClass}">${message}</span>`;
+      alert.classList.remove('opacity-0');
+
+      setTimeout(() => {
+        alert.classList.add('opacity-0');
+      }, 3500);
+    }
+
+    function hideFeedback() {
+      const alert = document.getElementById('feedbackAlert');
+      alert.classList.add('opacity-0');
+    }
+
+    function updateHeartsDisplay() {
+      const container = document.getElementById('heartsContainer');
+      container.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('i');
+        if (i < lives) {
+          dot.className = "fa-solid fa-circle text-[8px] text-terracotta";
+        } else {
+          dot.className = "fa-regular fa-circle text-[8px] text-sand-400";
+        }
+        container.appendChild(dot);
+      }
+    }
+
+    function triggerGameOver() {
+      playSound('gameover');
+      const modal = document.getElementById('gameOverModal');
+      document.getElementById('finalScoreDisplay').textContent = currentScore;
+      document.getElementById('lastPlayerName').textContent = currentPlayer ? currentPlayer.name : '-';
+      modal.classList.remove('hidden');
+    }
+
+    function triggerVictory() {
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 80,
+          colors: ['#BD5438', '#141412', '#998D77'],
+          origin: { y: 0.5 }
+        });
+      } catch(e) {}
+
+      const modal = document.getElementById('resultModal');
+      document.getElementById('modalTitle').textContent = "Parcours Entier Validé";
+      document.getElementById('modalSubtitle').textContent = `Score final : ${currentScore} points.`;
+      document.getElementById('modalPlayerName').textContent = "Prestige Absolu";
+      document.getElementById('modalPlayerInfo').textContent = "Toutes les carrières ont été déchiffrées.";
+      document.getElementById('modalPlayerBadge').textContent = "✦";
+      document.getElementById('modalActionBtn').innerHTML = `<span>Recommencer une Sélection</span> <i class="fa-solid fa-rotate-right ml-1"></i>`;
+      document.getElementById('modalActionBtn').onclick = () => initTrainingGame();
+
+      modal.classList.remove('hidden');
+    }
+
+    function resetToMenu() {
+      switchMode('daily');
+    }
+
+    window.onload = function() {
+      document.getElementById('currentDateDisplay').textContent = getTodayFormattedLabel();
+      setInterval(updateMidnightCountdown, 1000);
+      updateMidnightCountdown();
+      switchMode('daily');
+    };
+  </script>
+</body>
+</html>
