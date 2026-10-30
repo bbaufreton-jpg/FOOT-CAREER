@@ -1,0 +1,34 @@
+name: Actualisation Mensuelle de la Base
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configuration Python
+        uses: setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Dépendances
+        run: pip install -r scripts/requirements.txt
+
+      - name: Extraction
+        run: python scripts/build_database.py
+
+      - name: Commit et Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/players.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(data): sync carrières Wikidata" && git push)
